@@ -158,3 +158,159 @@ with st.container():
                     st.markdown("No encontré coincidencias específicas. Intenta con otra palabra.")
     
     st.markdown('</div>', unsafe_allow_html=True)
+import streamlit as st
+import pandas as pd
+import base64
+import re
+
+# 1. Configuración de la página
+st.set_page_config(page_title="Chatbot SERNISSAN", page_icon="🚗", layout="wide")
+
+# 2. Funciones de Apoyo
+def get_base64(bin_file):
+    try:
+        with open(bin_file, 'rb') as f:
+            return base64.b64encode(f.read()).decode()
+    except: return None
+
+@st.cache_data(ttl=0) 
+def load_data(sheet_url):
+    try:
+        csv_url = sheet_url.replace('/edit?usp=sharing', '/export?format=csv')
+        df = pd.read_csv(csv_url)
+        return df
+    except: return None
+
+def extraer_cargos_unicos(df):
+    try:
+        raw_cargos = df.iloc[:, 6].dropna().unique().tolist()
+        cargos_procesados = set()
+        for celda in raw_cargos:
+            partes = re.split(r',|\sy\s|\.|\n', str(celda))
+            for p in partes:
+                limpio = p.strip()
+                if limpio and len(limpio) > 2:
+                    cargos_procesados.add(limpio[0].upper() + limpio[1:])
+        return sorted(list(cargos_procesados))
+    except Exception as e:
+        return [f"Error al procesar cargos: {e}"]
+
+# 3. Estilos CSS (Centrado, Texto pequeño y Diseño Pro)
+bin_str = get_base64('TAIYOO.jpg')
+logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
+
+st.markdown(f"""
+    <style>
+    .block-container {{ padding: 0rem !important; max-width: 100% !important; }}
+    .stApp {{ background-color: #000000 !important; color: #FFFFFF !important; }}
+    header {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    
+    .red-banner {{ background-color: #C41230; width: 100vw; height: 120px; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0; }}
+    .logo-img {{ max-height: 80px; }}
+    .main-title {{ color: #FFFFFF !important; font-family: 'Arial Black', sans-serif; font-size: 36px; text-align: center; margin-top: 15px; width: 100%; }}
+    
+    /* Burbujas de Chat */
+    .stChatMessage {{ border-radius: 20px !important; padding: 12px !important; }}
+    [data-testid="stChatMessageAssistant"] {{ background-color: #FFFFFF !important; color: #000000 !important; font-size: 0.9em; }}
+    [data-testid="stChatMessageAssistant"] p {{ color: #000000 !important; }}
+
+    /* TABLA CENTRADA Y PEQUEÑA */
+    .table-container {{
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }}
+    .styled-table {{
+        margin-left: auto;
+        margin-right: auto;
+        border-collapse: collapse;
+        font-size: 0.8em; /* Texto más pequeño */
+        background-color: #1a1a1a;
+        color: white;
+        border: 1px solid #C41230;
+        width: 90%; /* Ajuste de ancho */
+    }}
+    .styled-table thead tr {{ background-color: #C41230; color: white; }}
+    .styled-table th, .styled-table td {{
+        padding: 8px 10px;
+        border: 1px solid #444;
+        text-align: center; /* Centrado de texto en celdas */
+        white-space: normal;
+    }}
+    
+    .content-wrapper {{ padding: 10px 10%; }}
+    .stButton>button {{ background-color: #C41230 !important; color: white !important; font-size: 0.8em; }}
+    </style>
+    
+    <div class="red-banner"><img src="{logo_html}" class="logo-img"></div>
+    <h1 class="main-title">Chatbot SERNISSAN</h1>
+    """, unsafe_allow_html=True)
+
+# 4. Memoria y Datos
+if "messages" not in st.session_state: st.session_state.messages = []
+if "cargo" not in st.session_state: st.session_state.cargo = None
+
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
+df = load_data(SHEET_URL)
+
+def restart_chat():
+    st.session_state.messages = []
+    st.session_state.cargo = None
+
+# 5. Interfaz Principal
+with st.container():
+    st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
+    
+    col_up1, col_up2 = st.columns([1, 1])
+    with col_up1:
+        if st.button("🔄 Reiniciar / Cambiar Cargo"):
+            restart_chat()
+            st.rerun()
+
+    st.write("---")
+
+    if st.session_state.cargo is None:
+        with st.chat_message("assistant"):
+            st.write("Selecciona tu cargo para ver tus responsabilidades:")
+        
+        if df is not None:
+            cargos = extraer_cargos_unicos(df)
+            cargo_sel = st.selectbox("Cargos:", ["Selecciona..."] + cargos, label_visibility="collapsed")
+            
+            if cargo_sel != "Selecciona...":
+                st.session_state.cargo = cargo_sel
+                df_inicial = df[df.iloc[:, 6].str.contains(cargo_sel, na=False, case=True)]
+                st.session_state.messages.append({"role": "assistant", "content": f"Cargo: **{cargo_sel}**", "data": df_inicial})
+                st.rerun()
+    
+    else:
+        for m in st.session_state.messages:
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
+                if "data" in m:
+                    # Botón para descargar a Excel
+                    csv = m["data"].to_csv(index=False).encode('utf-8')
+                    st.download_button(label="📥 Descargar tabla para Excel", data=csv, file_name=f'habitos_{st.session_state.cargo}.csv', mime='text/csv')
+                    # Renderizado de tabla centrada
+                    st.markdown(f'<div class="table-container">{m["data"].to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
+
+        if prompt := st.chat_input("Busca un hábito o palabra clave..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"): st.markdown(prompt)
+
+            busqueda = prompt.lower()
+            df_filtered = df[df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)]
+            df_cargo = df_filtered[df_filtered.iloc[:, 6].str.contains(st.session_state.cargo, na=False, case=True)]
+
+            with st.chat_message("assistant"):
+                if not df_cargo.empty:
+                    st.markdown(f"Resultados para **{st.session_state.cargo}**:")
+                    csv_res = df_cargo.to_csv(index=False).encode('utf-8')
+                    st.download_button(label="📥 Descargar resultados", data=csv_res, file_name='busqueda_sernissan.csv', mime='text/csv')
+                    st.markdown(f'<div class="table-container">{df_cargo.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
+                    st.session_state.messages.append({"role": "assistant", "content": "Resultados de búsqueda:", "data": df_cargo})
+                else:
+                    st.write("No hay resultados específicos.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
