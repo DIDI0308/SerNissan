@@ -20,15 +20,15 @@ def load_data(sheet_url):
         return df
     except: return None
 
-# 3. Estilos CSS (WhatsApp Style + UI Personalizada)
+# 3. Estilos CSS (Texto Blanco, Fondo Negro y Botones)
 bin_str = get_base64('TAIYO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
 st.markdown(f"""
     <style>
-    /* Reset y Fondo */
+    /* Reset y Fondo General */
     .block-container {{ padding: 0rem !important; max-width: 100% !important; }}
-    .stApp {{ background-color: #000000; color: #FFFFFF; }}
+    .stApp {{ background-color: #000000 !important; color: #FFFFFF !important; }}
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
@@ -41,15 +41,20 @@ st.markdown(f"""
     }}
     .logo-img {{ max-height: 80px; }}
 
-    /* Título Grande Centrado debajo de la franja */
+    /* Título Grande Centrado */
     .main-title {{
-        color: #FFFFFF; 
+        color: #FFFFFF !important; 
         font-family: 'Arial Black', sans-serif; 
         font-size: 42px; 
         text-align: center;
         margin-top: 20px;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
         width: 100%;
+    }}
+
+    /* Forzar color de texto blanco en toda la app */
+    .stMarkdown, .stText, p, h1, h2, h3, span, label {{
+        color: #FFFFFF !important;
     }}
 
     /* Burbujas tipo WhatsApp */
@@ -59,29 +64,34 @@ st.markdown(f"""
         margin-bottom: 15px !important;
     }}
     
-    /* Asistente: Blanco con texto negro */
+    /* Asistente: Fondo Blanco / Texto Negro (Clásico de WA) */
     [data-testid="stChatMessageAssistant"] {{
         background-color: #FFFFFF !important;
         color: #000000 !important;
-        border: 1px solid #DDD;
     }}
-    [data-testid="stChatMessageAssistant"] p, [data-testid="stChatMessageAssistant"] h3 {{ 
+    [data-testid="stChatMessageAssistant"] p, [data-testid="stChatMessageAssistant"] h3, [data-testid="stChatMessageAssistant"] span {{ 
         color: #000000 !important; 
     }}
 
-    /* Usuario: Verde WhatsApp con texto blanco */
+    /* Usuario: Verde WhatsApp / Texto Blanco */
     [data-testid="stChatMessageUser"] {{
         background-color: #25D366 !important;
-        color: #FFFFFF !important;
     }}
     [data-testid="stChatMessageUser"] p {{ 
         color: #FFFFFF !important; 
     }}
 
-    .content-wrapper {{ padding-left: 10%; padding-right: 10%; padding-top: 20px; }}
-    
-    /* Estilo para inputs y selects en modo oscuro */
-    .stSelectbox label, .stTextInput label {{ color: white !important; }}
+    /* Contenedor de Contenido */
+    .content-wrapper {{ padding-left: 10%; padding-right: 10%; padding-top: 10px; }}
+
+    /* Estilo del botón de actualizar (Fijo arriba) */
+    .stButton>button {{
+        background-color: #C41230 !important;
+        color: white !important;
+        border-radius: 10px;
+        border: none;
+        font-weight: bold;
+    }}
     </style>
     
     <div class="red-banner">
@@ -90,13 +100,13 @@ st.markdown(f"""
     <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
 
-# 4. Memoria del Chat y Estado
+# 4. Inicialización de sesión
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "cargo" not in st.session_state:
     st.session_state.cargo = None
 
-# 5. Carga de Datos
+# 5. Carga de Datos desde Google Sheets
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
 df = load_data(SHEET_URL)
 
@@ -104,46 +114,48 @@ def restart_chat():
     st.session_state.messages = []
     st.session_state.cargo = None
 
+# 6. Interfaz Principal
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
-    # Botón de reinicio en la parte superior derecha (opcional)
-    if st.session_state.cargo:
-        if st.button("🔄 Cambiar de Cargo / Reiniciar"):
+    # BOTÓN DE ACTUALIZAR (Siempre visible)
+    col_btn, _ = st.columns([1, 3])
+    with col_btn:
+        if st.button("🔄 Actualizar Datos / Cambiar Cargo"):
             restart_chat()
             st.rerun()
 
-    # PASO 1: Selección de Cargo
+    st.write("---")
+
+    # FLUJO DEL CHAT
     if st.session_state.cargo is None:
         with st.chat_message("assistant"):
-            st.markdown("### Hola. Bienvenida al sistema de gestión Taiyo Motors.\nPara comenzar, por favor indícame: **¿En qué cargo estás?**")
+            st.markdown("### Hola. Bienvenida al sistema de gestión de Taiyo Motors.\nPara brindarte la información de tu área, por favor selecciona: **¿En qué cargo estás?**")
         
         if df is not None:
             # Columna G (Responsables) es índice 6
             lista_cargos = sorted(df.iloc[:, 6].dropna().unique().tolist())
-            cargo_sel = st.selectbox("", ["Selecciona un cargo..."] + lista_cargos, label_visibility="collapsed")
+            cargo_sel = st.selectbox("Cargos disponibles:", ["Selecciona un cargo..."] + lista_cargos, label_visibility="collapsed")
             
             if cargo_sel != "Selecciona un cargo...":
                 st.session_state.cargo = cargo_sel
-                bienvenida = f"Perfecto. He cargado el manual SERNISSAN para el cargo: **{cargo_sel}**.\n\n¿Qué hábito o proceso deseas consultar hoy?"
-                st.session_state.messages.append({"role": "assistant", "content": bienvenida})
+                msj_bienvenida = f"Perfecto. He cargado el manual para el cargo: **{cargo_sel}**.\n\n¿Qué hábito o proceso deseas consultar?"
+                st.session_state.messages.append({"role": "assistant", "content": msj_bienvenida})
                 st.rerun()
     
-    # PASO 2: Conversación Activa
     else:
-        # Mostrar historial
+        # Mostrar historial de conversación
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        # Input de chat
-        if prompt := st.chat_input("Escribe el número del hábito o palabra clave..."):
-            # Guardar y mostrar mensaje del usuario
+        # Entrada de texto del chat
+        if prompt := st.chat_input("Escribe el nombre del proceso o número de hábito..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
-            # Lógica de búsqueda
+            # Búsqueda en el DataFrame
             busqueda = prompt.lower()
             df_filtered = df[df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)]
             
@@ -152,18 +164,18 @@ with st.container():
 
             with st.chat_message("assistant"):
                 if not df_cargo.empty:
-                    respuesta = f"He encontrado estos hábitos asignados a tu cargo (**{st.session_state.cargo}**):"
-                    st.markdown(respuesta)
+                    texto_resp = f"Resultados encontrados para tu cargo (**{st.session_state.cargo}**):"
+                    st.markdown(texto_resp)
                     st.table(df_cargo)
-                    st.session_state.messages.append({"role": "assistant", "content": respuesta})
+                    st.session_state.messages.append({"role": "assistant", "content": f"{texto_resp}\n(Tabla mostrada en pantalla)"})
                 elif not df_filtered.empty:
-                    respuesta = "No encontré ese término asignado a tu cargo, pero aquí hay resultados generales del manual:"
-                    st.markdown(respuesta)
+                    texto_resp = "No encontré ese término en tu cargo, pero aquí tienes resultados generales:"
+                    st.markdown(texto_resp)
                     st.dataframe(df_filtered)
-                    st.session_state.messages.append({"role": "assistant", "content": respuesta})
+                    st.session_state.messages.append({"role": "assistant", "content": f"{texto_resp}\n(Datos generales mostrados)"})
                 else:
-                    respuesta = "Lo siento, no encontré información con ese término. Intenta buscar el número del hábito (ej: 115)."
-                    st.markdown(respuesta)
-                    st.session_state.messages.append({"role": "assistant", "content": respuesta})
+                    texto_resp = "Lo siento, no encontré información relacionada. Intenta con una palabra clave diferente."
+                    st.markdown(texto_resp)
+                    st.session_state.messages.append({"role": "assistant", "content": texto_resp})
 
     st.markdown('</div>', unsafe_allow_html=True)
