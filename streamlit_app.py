@@ -14,7 +14,7 @@ def get_base64_of_bin_file(bin_file):
 # --- ESTILOS PERSONALIZADOS (CSS) ---
 # Intentamos cargar el logo, si no existe todavía, usamos un placeholder
 try:
-    bin_str = get_base64_of_bin_file('TAIYO.jpg')
+    bin_str = get_base64_of_bin_file('TAIYOO.jpg')
     logo_html = f'data:image/jpg;base64,{bin_str}'
 except FileNotFoundError:
     logo_html = "" # Se mantiene vacío hasta que subas el archivo
