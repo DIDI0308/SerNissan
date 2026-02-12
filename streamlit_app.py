@@ -15,7 +15,7 @@ def get_base64_of_bin_file(bin_file):
         return None
 
 # --- ESTILOS PERSONALIZADOS (CSS) ---
-bin_str = get_base64_of_bin_file('TAIYO.jpg')
+bin_str = get_base64_of_bin_file('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
 st.markdown(f"""
