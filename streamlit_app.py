@@ -3,8 +3,10 @@ import pandas as pd
 import base64
 import re
 
+# 1. Configuración de la página
 st.set_page_config(page_title="Chatbot SERNISSAN", page_icon="🚗", layout="wide")
 
+# 2. Funciones de Apoyo
 def get_base64(bin_file):
     try:
         with open(bin_file, 'rb') as f:
@@ -33,7 +35,7 @@ def extraer_cargos_unicos(df):
     except Exception as e:
         return [f"Error al procesar cargos: {e}"]
 
-
+# 3. Estilos CSS 
 bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
@@ -55,36 +57,13 @@ st.markdown(f"""
     [data-testid="stChatMessageUser"] {{ background-color: #25D366 !important; }}
     [data-testid="stChatMessageUser"] p {{ color: #FFFFFF !important; }}
 
-    /* FORMATO DE TABLA CENTRADA Y AJUSTADA */
-    .table-container {{
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        margin: 20px 0;
-    }}
+    .table-container {{ display: flex; justify-content: center; width: 100%; margin: 20px 0; }}
     .styled-table {{
-        border-collapse: collapse;
-        margin: auto;
-        font-size: 0.85em; /* Tamaño reducido para mejor ajuste */
-        font-family: sans-serif;
-        width: 90%;
-        background-color: #1a1a1a;
-        color: white;
-        border: 1px solid #444;
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+        border-collapse: collapse; margin: auto; font-size: 0.85em; font-family: sans-serif; width: 90%;
+        background-color: #1a1a1a; color: white; border: 1px solid #444; box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
     }}
-    .styled-table thead tr {{
-        background-color: #C41230;
-        color: #ffffff;
-        text-align: center;
-    }}
-    .styled-table th, .styled-table td {{
-        padding: 8px 12px;
-        border: 1px solid #444; /* Recuadro */
-        text-align: center;
-        white-space: normal !important; /* Ajuste automático de texto */
-        word-wrap: break-word;
-    }}
+    .styled-table thead tr {{ background-color: #C41230; color: #ffffff; text-align: center; }}
+    .styled-table th, .styled-table td {{ padding: 8px 12px; border: 1px solid #444; text-align: center; white-space: normal !important; word-wrap: break-word; }}
     
     .content-wrapper {{ padding-left: 10%; padding-right: 10%; padding-top: 10px; }}
     .stButton>button {{ background-color: #C41230 !important; color: white !important; border-radius: 10px; font-weight: bold; }}
@@ -94,7 +73,6 @@ st.markdown(f"""
     <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
 
-# 4. Memoria y Datos
 if "messages" not in st.session_state: st.session_state.messages = []
 if "cargo" not in st.session_state: st.session_state.cargo = None
 
@@ -105,7 +83,6 @@ def restart_chat():
     st.session_state.messages = []
     st.session_state.cargo = None
 
-# 5. Interfaz Principal
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
@@ -127,15 +104,11 @@ with st.container():
             
             if cargo_sel != "Selecciona un cargo...":
                 st.session_state.cargo = cargo_sel
-                # Filtrado automático al seleccionar cargo
                 df_cargo_inicial = df[df.iloc[:, 6].str.contains(cargo_sel, na=False, case=True)]
-                
                 msj_bienvenida = f"Perfecto. He cargado el manual para el cargo: **{cargo_sel}**."
                 st.session_state.messages.append({"role": "assistant", "content": msj_bienvenida})
-                
                 if not df_cargo_inicial.empty:
                     st.session_state.messages.append({"role": "assistant", "content": "Aquí tienes tus hábitos y procesos asignados:", "data": df_cargo_inicial})
-                
                 st.rerun()
     
     else:
@@ -143,19 +116,33 @@ with st.container():
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
                 if "data" in message:
-                    # Botón para descargar la tabla a Excel (CSV)
                     csv_data = message["data"].to_csv(index=False).encode('utf-8')
-                    st.download_button(label="Descargar esta tabla para Excel", data=csv_data, file_name=f'habitos_{st.session_state.cargo}.csv', mime='text/csv')
-                    # Renderizado de tabla con formato HTML
-                    st.markdown(f'<div class="table-container">{message["data"].to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
+                    st.download_button(label="Descargar esta tabla para Excel", data=csv_data, file_name=f'habitos_{st.session_state.cargo}.csv', mime='text/csv', key=f"dl_{message['content'][:10]}")
+                    st.markdown(f'<div class="table-container">{{message["data"].to_html(index=False, classes="styled-table")}}</div>', unsafe_allow_html=True)
 
-        if prompt := st.chat_input("Escribe el nombre del proceso o número de hábito..."):
+        if prompt := st.chat_input("Busca por nombre, N° Hábito (Col D), Momento (Col C) o PGI (Col A)..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"): st.markdown(prompt)
 
-            busqueda = prompt.lower()
-            df_filtered = df[df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)]
-            df_cargo = df_filtered[df_filtered.iloc[:, 6].str.contains(st.session_state.cargo, na=False, case=True)]
+            # Lógica de búsqueda mejorada
+            busqueda = prompt.lower().strip()
+            
+            # 1. Filtro exacto por columnas específicas (A, C, D)
+            # Columna A (índice 0), C (índice 2), D (índice 3)
+            mask_especifica = (
+                (df.iloc[:, 0].astype(str).str.lower() == busqueda) | # N° PGI
+                (df.iloc[:, 2].astype(str).str.lower().str.contains(busqueda, na=False)) | # Momento de Verdad
+                (df.iloc[:, 3].astype(str).str.lower() == busqueda) # N° Hábito
+            )
+            
+            # 2. Filtro general si no hay coincidencia exacta
+            mask_general = df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)
+            
+            # Unimos los criterios: primero busca lo específico
+            df_encontrado = df[mask_especifica] if not df[mask_especifica].empty else df[mask_general]
+            
+            # Aplicamos filtro de cargo
+            df_cargo = df_encontrado[df_encontrado.iloc[:, 6].str.contains(st.session_state.cargo, na=False, case=True)]
 
             with st.chat_message("assistant"):
                 if not df_cargo.empty:
@@ -165,13 +152,13 @@ with st.container():
                     st.download_button(label="Descargar resultados", data=csv_res, file_name='busqueda_sernissan.csv', mime='text/csv')
                     st.markdown(f'<div class="table-container">{df_cargo.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
                     st.session_state.messages.append({"role": "assistant", "content": texto, "data": df_cargo})
-                elif not df_filtered.empty:
-                    texto = "Resultados generales encontrados:"
+                elif not df_encontrado.empty:
+                    texto = "Resultados generales encontrados (fuera de tu cargo):"
                     st.markdown(texto)
-                    st.markdown(f'<div class="table-container">{df_filtered.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
-                    st.session_state.messages.append({"role": "assistant", "content": texto, "data": df_filtered})
+                    st.markdown(f'<div class="table-container">{df_encontrado.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
+                    st.session_state.messages.append({"role": "assistant", "content": texto, "data": df_encontrado})
                 else:
-                    msj = "No encontré información relacionada. Intenta con otra palabra clave."
+                    msj = "No encontré información con esos criterios."
                     st.markdown(msj)
                     st.session_state.messages.append({"role": "assistant", "content": msj})
 
