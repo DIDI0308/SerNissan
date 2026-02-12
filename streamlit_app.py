@@ -90,7 +90,7 @@ with st.container():
     # Botón Actualizar
     col_up, _ = st.columns([1, 3])
     with col_up:
-        if st.button("🔄 ACTUALIZAR TABLA MADRE"):
+        if st.button("ACTUALIZAR"):
             st.cache_data.clear()
             st.rerun()
 
@@ -130,12 +130,12 @@ with st.container():
         st.write("")
         
         # Botón Buscar
-        if st.button("🔍 EJECUTAR BÚSQUEDA FILTRADA"):
+        if st.button("BUSCAR"):
             if cargo_f != "Seleccionar..." or pgi_f != "Seleccionar..." or mv_f != "Seleccionar..." or hab_f != "Seleccionar...":
                 if not df_temp.empty:
                     st.success(f"Se encontraron {len(df_temp)} registros.")
                     csv = df_temp.to_csv(index=False).encode('utf-8')
-                    st.download_button(label="📥 Exportar estos resultados a Excel", data=csv, file_name='consulta_sernissan.csv', mime='text/csv')
+                    st.download_button(label="Exportar", data=csv, file_name='consulta_sernissan.csv', mime='text/csv')
                     st.markdown(f'<div class="table-container">{df_temp.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
                 else:
                     st.error("No existen datos para la combinación seleccionada.")
