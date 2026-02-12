@@ -3,10 +3,8 @@ import pandas as pd
 import base64
 import re
 
-# 1. Configuración de la página
 st.set_page_config(page_title="Chatbot SERNISSAN", page_icon="🚗", layout="wide")
 
-# 2. Funciones de Apoyo
 def get_base64(bin_file):
     try:
         with open(bin_file, 'rb') as f:
@@ -35,7 +33,7 @@ def extraer_cargos_unicos(df):
     except Exception as e:
         return [f"Error al procesar cargos: {e}"]
 
-# 3. Estilos CSS (Tablas Centradas, Pequeñas y con Recuadro)
+
 bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
@@ -147,7 +145,7 @@ with st.container():
                 if "data" in message:
                     # Botón para descargar la tabla a Excel (CSV)
                     csv_data = message["data"].to_csv(index=False).encode('utf-8')
-                    st.download_button(label="📥 Descargar esta tabla para Excel", data=csv_data, file_name=f'habitos_{st.session_state.cargo}.csv', mime='text/csv')
+                    st.download_button(label="Descargar esta tabla para Excel", data=csv_data, file_name=f'habitos_{st.session_state.cargo}.csv', mime='text/csv')
                     # Renderizado de tabla con formato HTML
                     st.markdown(f'<div class="table-container">{message["data"].to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
 
@@ -164,7 +162,7 @@ with st.container():
                     texto = f"Resultados para tu cargo (**{st.session_state.cargo}**):"
                     st.markdown(texto)
                     csv_res = df_cargo.to_csv(index=False).encode('utf-8')
-                    st.download_button(label="📥 Descargar resultados", data=csv_res, file_name='busqueda_sernissan.csv', mime='text/csv')
+                    st.download_button(label="Descargar resultados", data=csv_res, file_name='busqueda_sernissan.csv', mime='text/csv')
                     st.markdown(f'<div class="table-container">{df_cargo.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
                     st.session_state.messages.append({"role": "assistant", "content": texto, "data": df_cargo})
                 elif not df_filtered.empty:
