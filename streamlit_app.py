@@ -20,122 +20,150 @@ def load_data(sheet_url):
         return df
     except: return None
 
-# 3. Estilos CSS (Estética WhatsApp + Marca Taiyo)
+# 3. Estilos CSS (WhatsApp Style + UI Personalizada)
 bin_str = get_base64('TAIYO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
 st.markdown(f"""
     <style>
-    /* Reset de márgenes */
+    /* Reset y Fondo */
     .block-container {{ padding: 0rem !important; max-width: 100% !important; }}
-    .stApp {{ background-color: #000000; }}
+    .stApp {{ background-color: #000000; color: #FFFFFF; }}
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
-    /* Encabezado */
+    /* Franja Roja Superior */
     .red-banner {{
         background-color: #C41230; 
-        width: 100vw; height: 140px;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        width: 100vw; height: 120px;
+        display: flex; justify-content: center; align-items: center;
         margin: 0; padding: 0;
     }}
-    .logo-img {{ max-height: 70px; margin-bottom: 5px; }}
+    .logo-img {{ max-height: 80px; }}
+
+    /* Título Grande Centrado debajo de la franja */
     .main-title {{
-        color: white; font-family: 'Arial'; font-weight: bold; font-size: 24px; margin: 0;
+        color: #FFFFFF; 
+        font-family: 'Arial Black', sans-serif; 
+        font-size: 42px; 
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        width: 100%;
     }}
 
-    /* Estilo tipo WhatsApp */
+    /* Burbujas tipo WhatsApp */
     .stChatMessage {{ 
-        border-radius: 15px !important; 
+        border-radius: 20px !important; 
         padding: 15px !important;
         margin-bottom: 15px !important;
-        max-width: 80%;
     }}
     
-    /* Burbuja del Asistente (Blanca con texto negro) */
+    /* Asistente: Blanco con texto negro */
     [data-testid="stChatMessageAssistant"] {{
         background-color: #FFFFFF !important;
         color: #000000 !important;
-        margin-right: auto;
+        border: 1px solid #DDD;
     }}
-    [data-testid="stChatMessageAssistant"] p {{ color: #000000 !important; }}
+    [data-testid="stChatMessageAssistant"] p, [data-testid="stChatMessageAssistant"] h3 {{ 
+        color: #000000 !important; 
+    }}
 
-    /* Burbuja del Usuario (Verde WhatsApp) */
+    /* Usuario: Verde WhatsApp con texto blanco */
     [data-testid="stChatMessageUser"] {{
         background-color: #25D366 !important;
         color: #FFFFFF !important;
-        margin-left: auto;
     }}
-    [data-testid="stChatMessageUser"] p {{ color: #FFFFFF !important; }}
+    [data-testid="stChatMessageUser"] p {{ 
+        color: #FFFFFF !important; 
+    }}
 
-    .content-wrapper {{ padding: 2rem; }}
+    .content-wrapper {{ padding-left: 10%; padding-right: 10%; padding-top: 20px; }}
     
-    /* Ajuste de tablas en modo oscuro */
-    .stTable {{ background-color: #1A1A1A; border-radius: 10px; }}
+    /* Estilo para inputs y selects en modo oscuro */
+    .stSelectbox label, .stTextInput label {{ color: white !important; }}
     </style>
     
     <div class="red-banner">
         <img src="{logo_html}" class="logo-img">
-        <p class="main-title">Chatbot SERNISSAN</p>
     </div>
+    <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
 
-# 4. Memoria del Chat
+# 4. Memoria del Chat y Estado
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "cargo" not in st.session_state:
     st.session_state.cargo = None
 
-# 5. Carga de Datos Online
+# 5. Carga de Datos
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
 df = load_data(SHEET_URL)
+
+def restart_chat():
+    st.session_state.messages = []
+    st.session_state.cargo = None
 
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
+    # Botón de reinicio en la parte superior derecha (opcional)
+    if st.session_state.cargo:
+        if st.button("🔄 Cambiar de Cargo / Reiniciar"):
+            restart_chat()
+            st.rerun()
+
     # PASO 1: Selección de Cargo
     if st.session_state.cargo is None:
         with st.chat_message("assistant"):
-            st.markdown("Hola. Bienvenido al portal de Excelencia Nissan. **¿En qué cargo estás?**")
+            st.markdown("### Hola. Bienvenida al sistema de gestión Taiyo Motors.\nPara comenzar, por favor indícame: **¿En qué cargo estás?**")
         
         if df is not None:
-            # Columna G (Responsables) es el índice 6
+            # Columna G (Responsables) es índice 6
             lista_cargos = sorted(df.iloc[:, 6].dropna().unique().tolist())
-            cargo_sel = st.selectbox("Elige tu cargo para filtrar los hábitos:", [""] + lista_cargos)
+            cargo_sel = st.selectbox("", ["Selecciona un cargo..."] + lista_cargos, label_visibility="collapsed")
             
-            if cargo_sel != "":
+            if cargo_sel != "Selecciona un cargo...":
                 st.session_state.cargo = cargo_sel
-                st.session_state.messages.append({"role": "assistant", "content": f"Entendido. Mostrando información para: **{cargo_sel}**. ¿Qué hábito o proceso deseas consultar hoy?"})
+                bienvenida = f"Perfecto. He cargado el manual SERNISSAN para el cargo: **{cargo_sel}**.\n\n¿Qué hábito o proceso deseas consultar hoy?"
+                st.session_state.messages.append({"role": "assistant", "content": bienvenida})
                 st.rerun()
     
-    # PASO 2: Interfaz de Chat Estilo WhatsApp
+    # PASO 2: Conversación Activa
     else:
+        # Mostrar historial
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        if prompt := st.chat_input("Escribe el nombre del proceso o número de hábito..."):
+        # Input de chat
+        if prompt := st.chat_input("Escribe el número del hábito o palabra clave..."):
+            # Guardar y mostrar mensaje del usuario
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
-            # Búsqueda en vivo
+            # Lógica de búsqueda
             busqueda = prompt.lower()
             df_filtered = df[df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)]
             
-            # Filtro por cargo
+            # Filtro por cargo (Columna G)
             df_cargo = df_filtered[df_filtered.iloc[:, 6].str.contains(st.session_state.cargo, na=False, case=False)]
 
             with st.chat_message("assistant"):
                 if not df_cargo.empty:
-                    st.markdown(f"Aquí tienes los detalles encontrados para tu rol:")
+                    respuesta = f"He encontrado estos hábitos asignados a tu cargo (**{st.session_state.cargo}**):"
+                    st.markdown(respuesta)
                     st.table(df_cargo)
+                    st.session_state.messages.append({"role": "assistant", "content": respuesta})
                 elif not df_filtered.empty:
-                    st.markdown("Encontré coincidencias generales en el manual (fuera de tu cargo asignado):")
+                    respuesta = "No encontré ese término asignado a tu cargo, pero aquí hay resultados generales del manual:"
+                    st.markdown(respuesta)
                     st.dataframe(df_filtered)
+                    st.session_state.messages.append({"role": "assistant", "content": respuesta})
                 else:
-                    st.markdown("No encontré información relacionada en el manual SERNISSAN. Intenta con otra palabra clave.")
-            
-            st.session_state.messages.append({"role": "assistant", "content": "Búsqueda finalizada."})
+                    respuesta = "Lo siento, no encontré información con ese término. Intenta buscar el número del hábito (ej: 115)."
+                    st.markdown(respuesta)
+                    st.session_state.messages.append({"role": "assistant", "content": respuesta})
 
     st.markdown('</div>', unsafe_allow_html=True)
