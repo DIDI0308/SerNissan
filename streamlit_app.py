@@ -43,7 +43,7 @@ def extraer_cargos_unicos(df):
         return [f"Error al procesar cargos: {e}"]
 
 # 3. Estilos CSS (Texto Blanco, Fondo Negro y Botones)
-bin_str = get_base64('TAIYO.jpg')
+bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
 st.markdown(f"""
@@ -141,7 +141,7 @@ with st.container():
     # Botón siempre visible
     col_btn, _ = st.columns([1, 3])
     with col_btn:
-        if st.button("🔄 Actualizar Datos / Cambiar Cargo"):
+        if st.button("Actualizar Datos / Cambiar Cargo"):
             restart_chat()
             st.rerun()
 
