@@ -34,7 +34,7 @@ def extraer_cargos_unicos(columna_df):
         return sorted(list(cargos_procesados))
     except: return []
 
-# 3. Estilos CSS
+# 3. Estilos CSS (Botones Rojos con Borde, Fondo Negro, Texto Blanco)
 bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
@@ -44,17 +44,37 @@ st.markdown(f"""
     .stApp {{ background-color: #000000 !important; color: #FFFFFF !important; }}
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
+    
     .red-banner {{ background-color: #C41230; width: 100vw; height: 120px; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0; }}
     .logo-img {{ max-height: 80px; }}
     .main-title {{ color: #FFFFFF !important; font-family: 'Arial Black', sans-serif; font-size: 42px; text-align: center; margin-top: 20px; width: 100%; }}
+    
     .stMarkdown, .stText, p, h1, h2, h3, span, label, .stSelectbox p {{ color: #FFFFFF !important; }}
-    .stButton>button {{ background-color: #C41230 !important; color: #FFFFFF !important; border-radius: 10px; border: 1px solid #FFFFFF; font-weight: bold; width: 100%; height: 45px; }}
+    
+    /* Estilo de los Botones: Fondo Rojo, Texto Blanco, Borde Blanco/Rojo */
+    .stButton>button {{
+        background-color: #C41230 !important;
+        color: #FFFFFF !important;
+        border-radius: 10px;
+        border: 2px solid #FFFFFF !important; /* Borde resaltado */
+        font-weight: bold;
+        width: 100%;
+        height: 45px;
+    }}
+    .stButton>button:hover {{
+        background-color: #A00F27 !important;
+        border: 2px solid #C41230 !important;
+    }}
+
     .table-container {{ display: flex; justify-content: center; width: 100%; margin: 20px 0; }}
     .styled-table {{ border-collapse: collapse; margin: auto; font-size: 0.8em; width: 95%; background-color: #1a1a1a; color: white; border: 1px solid #C41230; }}
     .styled-table thead tr {{ background-color: #C41230; color: #ffffff; text-align: center; }}
     .styled-table th, .styled-table td {{ padding: 6px 10px; border: 1px solid #444; text-align: center; white-space: normal !important; word-wrap: break-word; }}
+    
     .content-wrapper {{ padding: 10px 5%; }}
+    .welcome-msg {{ font-size: 20px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid #C41230; padding-left: 15px; }}
     </style>
+    
     <div class="red-banner"><img src="{logo_html}" class="logo-img"></div>
     <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
@@ -67,6 +87,7 @@ df_master = load_data(SHEET_URL)
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
+    # --- BOTÓN DE ACTUALIZACIÓN ---
     col_up, _ = st.columns([1, 3])
     with col_up:
         if st.button("🔄 ACTUALIZAR TABLA MADRE"):
@@ -76,12 +97,14 @@ with st.container():
     st.write("---")
 
     if df_master is not None:
-        # Copia para filtrar dinámicamente las opciones de los selectores
-        df_temp = df_master.copy()
+        # Mensaje de bienvenida antes de los filtros
+        st.markdown('<p class="welcome-msg">Hola, bienvenido al chat bot de consultas sobre SerNissan</p>', unsafe_allow_html=True)
 
+        # Copia para filtrar dinámicamente las opciones
+        df_temp = df_master.copy()
         col1, col2, col3, col4 = st.columns(4)
 
-        # Lógica de Filtros en Cascada (Dependientes)
+        # Filtros en Cascada
         with col1:
             cargos_op = extraer_cargos_unicos(df_master.iloc[:, 6])
             cargo_f = st.selectbox("CARGO", ["Seleccionar..."] + cargos_op)
@@ -110,7 +133,6 @@ with st.container():
         
         # BOTÓN DE BÚSQUEDA
         if st.button("🔍 EJECUTAR BÚSQUEDA FILTRADA"):
-            # Verificamos si se ha seleccionado algo para no mostrar toda la base de golpe
             if cargo_f != "Seleccionar..." or pgi_f != "Seleccionar..." or mv_f != "Seleccionar..." or hab_f != "Seleccionar...":
                 if not df_temp.empty:
                     st.success(f"Se encontraron {len(df_temp)} registros.")
