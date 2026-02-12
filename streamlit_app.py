@@ -3,10 +3,8 @@ import pandas as pd
 import base64
 import re
 
-# 1. Configuración de la página
 st.set_page_config(page_title="Chatbot SERNISSAN", page_icon="🚗", layout="wide")
 
-# 2. Funciones de Apoyo
 def get_base64(bin_file):
     try:
         with open(bin_file, 'rb') as f:
@@ -34,7 +32,6 @@ def extraer_cargos_unicos(columna_df):
         return sorted(list(cargos_procesados))
     except: return []
 
-# 3. Estilos CSS (Botones con Borde ROJO)
 bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
@@ -79,15 +76,12 @@ st.markdown(f"""
     <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
 
-# 4. Carga de Datos
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
 df_master = load_data(SHEET_URL)
 
-# 5. Interfaz Principal
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
-    # Botón Actualizar
     col_up, _ = st.columns([1, 3])
     with col_up:
         if st.button("ACTUALIZAR"):
@@ -102,7 +96,6 @@ with st.container():
         df_temp = df_master.copy()
         col1, col2, col3, col4 = st.columns(4)
 
-        # Filtros en Cascada
         with col1:
             cargos_op = extraer_cargos_unicos(df_master.iloc[:, 6])
             cargo_f = st.selectbox("CARGO", ["Seleccionar..."] + cargos_op)
@@ -129,7 +122,6 @@ with st.container():
 
         st.write("")
         
-        # Botón Buscar
         if st.button("BUSCAR"):
             if cargo_f != "Seleccionar..." or pgi_f != "Seleccionar..." or mv_f != "Seleccionar..." or hab_f != "Seleccionar...":
                 if not df_temp.empty:
