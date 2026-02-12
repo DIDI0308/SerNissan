@@ -34,7 +34,7 @@ def extraer_cargos_unicos(columna_df):
         return sorted(list(cargos_procesados))
     except: return []
 
-# 3. Estilos CSS (Botones Rojos con Borde, Fondo Negro, Texto Blanco)
+# 3. Estilos CSS (Botones con Borde ROJO)
 bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
@@ -51,19 +51,19 @@ st.markdown(f"""
     
     .stMarkdown, .stText, p, h1, h2, h3, span, label, .stSelectbox p {{ color: #FFFFFF !important; }}
     
-    /* Estilo de los Botones: Fondo Rojo, Texto Blanco, Borde Blanco/Rojo */
+    /* Estilo de los Botones: Fondo Rojo, Texto Blanco, Borde ROJO */
     .stButton>button {{
         background-color: #C41230 !important;
         color: #FFFFFF !important;
         border-radius: 10px;
-        border: 2px solid #FFFFFF !important; /* Borde resaltado */
+        border: 2px solid #C41230 !important; /* BORDE ROJO AQUI */
         font-weight: bold;
         width: 100%;
         height: 45px;
     }}
     .stButton>button:hover {{
         background-color: #A00F27 !important;
-        border: 2px solid #C41230 !important;
+        border: 2px solid #FFFFFF !important; /* Borde cambia a blanco al pasar el mouse para feedback visual */
     }}
 
     .table-container {{ display: flex; justify-content: center; width: 100%; margin: 20px 0; }}
@@ -87,7 +87,7 @@ df_master = load_data(SHEET_URL)
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
-    # --- BOTÓN DE ACTUALIZACIÓN ---
+    # Botón Actualizar
     col_up, _ = st.columns([1, 3])
     with col_up:
         if st.button("🔄 ACTUALIZAR TABLA MADRE"):
@@ -97,10 +97,8 @@ with st.container():
     st.write("---")
 
     if df_master is not None:
-        # Mensaje de bienvenida antes de los filtros
         st.markdown('<p class="welcome-msg">Hola, bienvenido al chat bot de consultas sobre SerNissan</p>', unsafe_allow_html=True)
 
-        # Copia para filtrar dinámicamente las opciones
         df_temp = df_master.copy()
         col1, col2, col3, col4 = st.columns(4)
 
@@ -131,7 +129,7 @@ with st.container():
 
         st.write("")
         
-        # BOTÓN DE BÚSQUEDA
+        # Botón Buscar
         if st.button("🔍 EJECUTAR BÚSQUEDA FILTRADA"):
             if cargo_f != "Seleccionar..." or pgi_f != "Seleccionar..." or mv_f != "Seleccionar..." or hab_f != "Seleccionar...":
                 if not df_temp.empty:
