@@ -78,8 +78,8 @@ with st.container():
         st.write("") 
         st.title("🤖") 
     with col2:
-        st.subheader("¡Bienvenido al Chatbot de SERNISSAN!")
-        st.write("Hola, soy tu asistente virtual de mejora continua. Estoy aquí para ayudarte a consultar los hábitos y KPIs de gestión.")
+        st.subheader("Chatbot de SERNISSAN")
+        st.write("Hola, soy tu asistente virtual. Estoy aquí para lo que necesites.")
 
     # --- EXTRACCIÓN DE DATOS ---
     sheet_id = "1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n"
