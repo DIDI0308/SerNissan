@@ -32,10 +32,9 @@ def extraer_cargos_unicos(df):
                 if limpio and len(limpio) > 2:
                     cargos_procesados.add(limpio[0].upper() + limpio[1:])
         return sorted(list(cargos_procesados))
-    except Exception as e:
-        return [f"Error al procesar cargos: {e}"]
+    except: return []
 
-# 3. Estilos CSS (Botones Rojos, Texto Blanco, Tablas Centradas)
+# 3. Estilos CSS (Botones Rojos, Fondo Negro, Texto Blanco)
 bin_str = get_base64('TAIYOO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
@@ -46,15 +45,12 @@ st.markdown(f"""
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
-    /* Banner Rojo */
     .red-banner {{ background-color: #C41230; width: 100vw; height: 120px; display: flex; justify-content: center; align-items: center; margin: 0; padding: 0; }}
     .logo-img {{ max-height: 80px; }}
     .main-title {{ color: #FFFFFF !important; font-family: 'Arial Black', sans-serif; font-size: 42px; text-align: center; margin-top: 20px; width: 100%; }}
     
-    /* Texto Blanco General */
     .stMarkdown, .stText, p, h1, h2, h3, span, label, .stSelectbox p {{ color: #FFFFFF !important; }}
     
-    /* Botones ROJOS con texto BLANCO */
     .stButton>button {{
         background-color: #C41230 !important;
         color: #FFFFFF !important;
@@ -64,18 +60,8 @@ st.markdown(f"""
         width: 100%;
         height: 45px;
     }}
-    .stButton>button:hover {{
-        background-color: #A00F27 !important;
-        border: 1px solid #C41230;
-    }}
 
-    /* Estilo de Chat */
-    .stChatMessage {{ border-radius: 20px !important; padding: 15px !important; margin-bottom: 15px !important; }}
-    [data-testid="stChatMessageAssistant"] {{ background-color: #FFFFFF !important; color: #000000 !important; }}
-    [data-testid="stChatMessageAssistant"] p, [data-testid="stChatMessageAssistant"] span {{ color: #000000 !important; }}
-    [data-testid="stChatMessageUser"] {{ background-color: #25D366 !important; }}
-    
-    /* Tabla Centrada y Profesional */
+    /* Estilo de la Tabla Centrada */
     .table-container {{ display: flex; justify-content: center; width: 100%; margin: 20px 0; }}
     .styled-table {{ border-collapse: collapse; margin: auto; font-size: 0.8em; width: 95%; background-color: #1a1a1a; color: white; border: 1px solid #C41230; }}
     .styled-table thead tr {{ background-color: #C41230; color: #ffffff; text-align: center; }}
@@ -88,29 +74,24 @@ st.markdown(f"""
     <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
 
-# 4. Memoria y Datos
-if "messages" not in st.session_state: st.session_state.messages = []
-
+# 4. Carga de Datos
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
 df = load_data(SHEET_URL)
-
-def restart_chat():
-    st.session_state.messages = []
 
 # 5. Interfaz Principal
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
-    # --- BOTÓN ACTUALIZAR ---
+    # BOTÓN DE ACTUALIZACIÓN (Solo limpia caché y refresca la app)
     col_up, _ = st.columns([1, 3])
     with col_up:
         if st.button("🔄 ACTUALIZAR TABLA MADRE"):
-            restart_chat()
+            st.cache_data.clear()
             st.rerun()
 
     st.write("---")
 
-    # --- LOS 4 FILTROS ---
+    # LAS CUATRO CASILLAS DE FILTRO
     col1, col2, col3, col4 = st.columns(4)
     
     if df is not None:
@@ -127,12 +108,15 @@ with st.container():
             opciones_hab = ["Filtrar por Hábito..."] + sorted(df.iloc[:, 3].dropna().unique().astype(str).tolist())
             hab_f = st.selectbox("N° HÁBITO", opciones_hab)
 
-    # --- BOTÓN DE BÚSQUEDA ROJO ---
+    st.write("")
+    
+    # BOTÓN DE BÚSQUEDA (Único disparador de la respuesta)
     if st.button("🔍 EJECUTAR BÚSQUEDA FILTRADA"):
         if df is not None:
             res = df.copy()
             activos = []
 
+            # Aplicación de filtros combinados
             if cargo_f != "Filtrar por Cargo...":
                 res = res[res.iloc[:, 6].str.contains(cargo_f, na=False, case=True)]
                 activos.append(f"Cargo: {cargo_f}")
@@ -146,36 +130,20 @@ with st.container():
                 res = res[res.iloc[:, 3].astype(str) == hab_f]
                 activos.append(f"Hábito: {hab_f}")
 
+            # Mostrar respuesta única
             if activos:
                 if not res.empty:
-                    st.session_state.messages.append({"role": "assistant", "content": f"Resultados para: {', '.join(activos)}", "data": res})
+                    st.success(f"Resultados para: {', '.join(activos)}")
+                    
+                    # Botón de exportación directo
+                    csv = res.to_csv(index=False).encode('utf-8')
+                    st.download_button(label="📥 Exportar estos resultados a Excel", data=csv, file_name='consulta_sernissan.csv', mime='text/csv')
+                    
+                    # Tabla única centrada
+                    st.markdown(f'<div class="table-container">{res.to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
                 else:
-                    st.session_state.messages.append({"role": "assistant", "content": f"Sin resultados para: {', '.join(activos)}"})
+                    st.error(f"No se encontró información para la combinación: {', '.join(activos)}")
             else:
-                st.warning("Selecciona al menos un filtro.")
-
-    st.write("---")
-
-    # 6. Chat y Resultados
-    for m in st.session_state.messages:
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
-            if "data" in m:
-                csv = m["data"].to_csv(index=False).encode('utf-8')
-                st.download_button(label="📥 Exportar estos datos a Excel", data=csv, file_name='sernissan_tarija.csv', mime='text/csv', key=f"dl_{hash(str(m['data']))}")
-                st.markdown(f'<div class="table-container">{m["data"].to_html(index=False, classes="styled-table")}</div>', unsafe_allow_html=True)
-
-    if prompt := st.chat_input("O busca aquí por palabra clave..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
-        
-        busqueda = prompt.lower()
-        df_f = df[df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)]
-        
-        with st.chat_message("assistant"):
-            if not df_f.empty:
-                st.session_state.messages.append({"role": "assistant", "content": f"Resultados de palabra clave '{prompt}':", "data": df_f})
-            else:
-                st.markdown("No se encontraron coincidencias.")
+                st.warning("Selecciona al menos un filtro antes de ejecutar la búsqueda.")
 
     st.markdown('</div>', unsafe_allow_html=True)
