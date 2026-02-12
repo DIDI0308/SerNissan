@@ -21,37 +21,40 @@ def load_data(sheet_url):
         return df
     except: return None
 
-# Función para limpiar y separar cargos únicos
+# Nueva función para procesar y limpiar la lista de cargos únicos
 def extraer_cargos_unicos(df):
     try:
-        # Seleccionamos la columna G (índice 6)
-        columna_responsables = df.iloc[:, 6].dropna().astype(str)
+        # Columna G (Responsables) es índice 6
+        raw_cargos = df.iloc[:, 6].dropna().unique().tolist()
+        cargos_procesados = set()
         
-        cargos_set = set()
-        for celda in columna_responsables:
-            # Reemplazamos la "y" por una coma para estandarizar el separador
-            # Luego separamos por comas o puntos
-            partes = re.split(r',|\sy\s|\.', celda)
+        for celda in raw_cargos:
+            # Separamos por coma, por punto, o por la palabra "y" (con espacios alrededor)
+            # También manejamos saltos de línea
+            partes = re.split(r',|\sy\s|\.|\n', str(celda))
             for p in partes:
-                limpio = p.strip().capitalize() # Limpiamos espacios y estandarizamos
-                if limpio and len(limpio) > 3: # Evitamos textos vacíos o muy cortos
-                    cargos_set.add(limpio)
+                limpio = p.strip()
+                if limpio and len(limpio) > 2: # Evitar fragmentos vacíos
+                    # Capitalizamos la primera letra para uniformidad
+                    cargos_procesados.add(limpio[0].upper() + limpio[1:])
         
-        return sorted(list(cargos_set))
-    except:
-        return ["Error al leer cargos"]
+        return sorted(list(cargos_procesados))
+    except Exception as e:
+        return [f"Error al procesar cargos: {e}"]
 
-# 3. Estilos CSS (WhatsApp Style + Modo Oscuro)
+# 3. Estilos CSS (Texto Blanco, Fondo Negro y Botones)
 bin_str = get_base64('TAIYO.jpg')
 logo_html = f'data:image/jpg;base64,{bin_str}' if bin_str else ""
 
 st.markdown(f"""
     <style>
+    /* Fondo y Texto General */
     .block-container {{ padding: 0rem !important; max-width: 100% !important; }}
     .stApp {{ background-color: #000000 !important; color: #FFFFFF !important; }}
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
+    /* Franja Roja Superior */
     .red-banner {{
         background-color: #C41230; 
         width: 100vw; height: 120px;
@@ -59,18 +62,56 @@ st.markdown(f"""
         margin: 0; padding: 0;
     }}
     .logo-img {{ max-height: 80px; }}
+
+    /* Título Grande Centrado */
     .main-title {{
-        color: #FFFFFF !important; font-family: 'Arial Black'; font-size: 42px; 
-        text-align: center; margin-top: 20px;
+        color: #FFFFFF !important; 
+        font-family: 'Arial Black', sans-serif; 
+        font-size: 42px; 
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: 5px;
+        width: 100%;
     }}
 
-    /* Burbujas de Chat */
-    [data-testid="stChatMessageAssistant"] {{ background-color: #FFFFFF !important; color: #000000 !important; }}
-    [data-testid="stChatMessageAssistant"] p {{ color: #000000 !important; }}
-    [data-testid="stChatMessageUser"] {{ background-color: #25D366 !important; color: #FFFFFF !important; }}
+    /* Texto Blanco en toda la app */
+    .stMarkdown, .stText, p, h1, h2, h3, span, label, .stSelectbox p {{
+        color: #FFFFFF !important;
+    }}
+
+    /* Burbujas tipo WhatsApp */
+    .stChatMessage {{ 
+        border-radius: 20px !important; 
+        padding: 15px !important;
+        margin-bottom: 15px !important;
+    }}
     
-    .content-wrapper {{ padding: 2rem 10%; }}
-    .stButton>button {{ background-color: #C41230 !important; color: white !important; }}
+    /* Asistente: Fondo Blanco / Texto Negro */
+    [data-testid="stChatMessageAssistant"] {{
+        background-color: #FFFFFF !important;
+    }}
+    [data-testid="stChatMessageAssistant"] p, [data-testid="stChatMessageAssistant"] h3, [data-testid="stChatMessageAssistant"] span {{ 
+        color: #000000 !important; 
+    }}
+
+    /* Usuario: Verde WhatsApp / Texto Blanco */
+    [data-testid="stChatMessageUser"] {{
+        background-color: #25D366 !important;
+    }}
+    [data-testid="stChatMessageUser"] p {{ 
+        color: #FFFFFF !important; 
+    }}
+
+    .content-wrapper {{ padding-left: 10%; padding-right: 10%; padding-top: 10px; }}
+
+    /* Botón Rojo Taiyo */
+    .stButton>button {{
+        background-color: #C41230 !important;
+        color: white !important;
+        border-radius: 10px;
+        border: none;
+        font-weight: bold;
+    }}
     </style>
     
     <div class="red-banner">
@@ -79,10 +120,13 @@ st.markdown(f"""
     <h1 class="main-title">Chatbot SERNISSAN</h1>
     """, unsafe_allow_html=True)
 
-# 4. Inicialización y Carga
-if "messages" not in st.session_state: st.session_state.messages = []
-if "cargo" not in st.session_state: st.session_state.cargo = None
+# 4. Inicialización de sesión
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "cargo" not in st.session_state:
+    st.session_state.cargo = None
 
+# 5. Carga de Datos
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
 df = load_data(SHEET_URL)
 
@@ -90,51 +134,65 @@ def restart_chat():
     st.session_state.messages = []
     st.session_state.cargo = None
 
-# 5. Interfaz
+# 6. Interfaz Principal
 with st.container():
     st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
-    if st.session_state.cargo:
-        if st.button("🔄 Cambiar de Cargo"):
+    # Botón siempre visible
+    col_btn, _ = st.columns([1, 3])
+    with col_btn:
+        if st.button("🔄 Actualizar Datos / Cambiar Cargo"):
             restart_chat()
             st.rerun()
 
+    st.write("---")
+
     if st.session_state.cargo is None:
         with st.chat_message("assistant"):
-            st.markdown("### Hola. Bienvenida a Taiyo Motors.\nPor favor, selecciona tu cargo específico:")
+            st.markdown("### Hola. Bienvenida al sistema de gestión de Taiyo Motors.\nPara brindarte la información de tu área, por favor selecciona: **¿En qué cargo estás?**")
         
         if df is not None:
-            cargos_limpios = extraer_cargos_unicos(df)
-            cargo_sel = st.selectbox("", ["Selecciona..."] + cargos_limpios, label_visibility="collapsed")
+            # Usamos la función de limpieza para obtener la lista individualizada
+            lista_cargos_limpia = extraer_cargos_unicos(df)
             
-            if cargo_sel != "Selecciona...":
+            cargo_sel = st.selectbox("Cargos disponibles:", ["Selecciona un cargo..."] + lista_cargos_limpia, label_visibility="collapsed")
+            
+            if cargo_sel != "Selecciona un cargo...":
                 st.session_state.cargo = cargo_sel
-                msj = f"Configurado para: **{cargo_sel}**. ¿Qué proceso deseas consultar?"
-                st.session_state.messages.append({"role": "assistant", "content": msj})
+                msj_bienvenida = f"Perfecto. He cargado el manual para el cargo: **{cargo_sel}**.\n\n¿Qué hábito o proceso deseas consultar?"
+                st.session_state.messages.append({"role": "assistant", "content": msj_bienvenida})
                 st.rerun()
+    
     else:
-        for m in st.session_state.messages:
-            with st.chat_message(m["role"]): st.markdown(m["content"])
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-        if prompt := st.chat_input("Escribe el hábito o palabra clave..."):
+        if prompt := st.chat_input("Escribe el nombre del proceso o número de hábito..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"): st.markdown(prompt)
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-            # Búsqueda
             busqueda = prompt.lower()
-            mask = df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)
-            df_filtered = df[mask]
+            df_filtered = df[df.astype(str).apply(lambda x: busqueda in x.str.lower().values, axis=1)]
             
-            # Filtro por cargo seleccionado en la columna de responsables
-            df_cargo = df_filtered[df_filtered.iloc[:, 6].str.contains(st.session_state.cargo, na=False, case=False)]
+            # Filtro por cargo (ahora buscamos si el cargo seleccionado existe dentro de la cadena de responsables)
+            df_cargo = df_filtered[df_filtered.iloc[:, 6].str.contains(st.session_state.cargo, na=False, case=True)]
 
             with st.chat_message("assistant"):
                 if not df_cargo.empty:
+                    texto_resp = f"Resultados encontrados para tu cargo (**{st.session_state.cargo}**):"
+                    st.markdown(texto_resp)
                     st.table(df_cargo)
+                    st.session_state.messages.append({"role": "assistant", "content": f"{texto_resp}\n(Tabla mostrada)"})
                 elif not df_filtered.empty:
-                    st.markdown("Resultados generales fuera de tu cargo:")
+                    texto_resp = "No encontré ese término en tu cargo, pero aquí tienes resultados generales:"
+                    st.markdown(texto_resp)
                     st.dataframe(df_filtered)
+                    st.session_state.messages.append({"role": "assistant", "content": f"{texto_resp}\n(Datos generales)"})
                 else:
-                    st.markdown("No hay resultados. Intenta con otra palabra.")
+                    texto_resp = "Lo siento, no encontré información relacionada. Intenta con una palabra clave diferente."
+                    st.markdown(texto_resp)
+                    st.session_state.messages.append({"role": "assistant", "content": texto_resp})
 
     st.markdown('</div>', unsafe_allow_html=True)
