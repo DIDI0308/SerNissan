@@ -76,7 +76,7 @@ st.markdown(f"""
     <h1 class="main-title">APP SerNissan</h1>
     """, unsafe_allow_html=True)
 
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
+SHEET_URL = "SER_NISSAN"
 df_master = load_data(SHEET_URL)
 
 with st.container():
