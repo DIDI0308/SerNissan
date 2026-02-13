@@ -3,7 +3,7 @@ import pandas as pd
 import base64
 import re
 
-st.set_page_config(page_title="Chatbot SERNISSAN", page_icon="🚗", layout="wide")
+st.set_page_config(page_title="APP SerNissan", page_icon="🚗", layout="wide")
 
 def get_base64(bin_file):
     try:
@@ -91,7 +91,7 @@ with st.container():
     st.write("---")
 
     if df_master is not None:
-        st.markdown('<p class="welcome-msg">Hola, bienvenido al chat bot de consultas sobre SerNissan</p>', unsafe_allow_html=True)
+        st.markdown('<p class="welcome-msg">Hola, bienvenido a la app de consultas sobre SerNissan</p>', unsafe_allow_html=True)
 
         df_temp = df_master.copy()
         col1, col2, col3, col4 = st.columns(4)
