@@ -73,7 +73,7 @@ st.markdown(f"""
     </style>
     
     <div class="red-banner"><img src="{logo_html}" class="logo-img"></div>
-    <h1 class="main-title">Chatbot SERNISSAN</h1>
+    <h1 class="main-title">APP SerNissan</h1>
     """, unsafe_allow_html=True)
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1FcQUNjuHkrK3idDJLtgIxqlXTxEQ-M7n/edit?usp=sharing"
