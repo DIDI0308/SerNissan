@@ -14,10 +14,13 @@ def get_base64(bin_file):
 @st.cache_data(ttl=0) 
 def load_data(sheet_url):
     try:
-        csv_url = sheet_url.replace('/edit?usp=sharing', '/export?format=csv')
+        # Reemplaza la parte final para exportar como CSV
+        csv_url = sheet_url.split('/edit')[0] + '/export?format=csv'
         df = pd.read_csv(csv_url)
         return df
-    except: return None
+    except Exception as e:
+        st.error(f"Error al cargar datos: {e}")
+        return None
 
 def extraer_cargos_unicos(columna_df):
     try:
@@ -48,19 +51,18 @@ st.markdown(f"""
     
     .stMarkdown, .stText, p, h1, h2, h3, span, label, .stSelectbox p {{ color: #FFFFFF !important; }}
     
-    /* Estilo de los Botones: Fondo Rojo, Texto Blanco, Borde ROJO */
     .stButton>button {{
         background-color: #C41230 !important;
         color: #FFFFFF !important;
         border-radius: 10px;
-        border: 2px solid #C41230 !important; /* BORDE ROJO AQUI */
+        border: 2px solid #C41230 !important;
         font-weight: bold;
         width: 100%;
         height: 45px;
     }}
     .stButton>button:hover {{
         background-color: #A00F27 !important;
-        border: 2px solid #FFFFFF !important; /* Borde cambia a blanco al pasar el mouse para feedback visual */
+        border: 2px solid #FFFFFF !important;
     }}
 
     .table-container {{ display: flex; justify-content: center; width: 100%; margin: 20px 0; }}
@@ -76,7 +78,12 @@ st.markdown(f"""
     <h1 class="main-title">APP SerNissan</h1>
     """, unsafe_allow_html=True)
 
-SHEET_URL = "SER_NISSAN"
+try:
+    SHEET_URL = st.secrets["SER_NISSAN_URL"]
+except:
+    st.error("Error: No se encontró la URL de la base de datos. Configura los 'Secrets'.")
+    st.stop()
+
 df_master = load_data(SHEET_URL)
 
 with st.container():
